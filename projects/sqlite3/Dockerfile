@@ -19,9 +19,10 @@ RUN apt-get update && apt-get install -y make autoconf automake libtool curl tcl
 
 # We won't be able to poll fossil for changes, so this will build
 # only once a day.
+COPY tarball.tgz /root/
 RUN mkdir $SRC/sqlite3 && \
     cd $SRC/sqlite3 && \
-    curl 'https://www.sqlite.org/src/tarball?uuid=trunk' -o sqlite3.tar.gz && \
+    mv /root/tarball.tgz sqlite3.tar.gz && \
     tar xzf sqlite3.tar.gz
 
 RUN find $SRC/sqlite3 -name "*.test" | xargs zip $SRC/ossfuzz_seed_corpus.zip

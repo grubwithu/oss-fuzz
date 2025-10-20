@@ -92,9 +92,13 @@ function clone_with_retries {
   set -e
   return $CHECKOUT_RETURN_CODE
 }
-clone_with_retries https://github.com/llvm/llvm-project.git $LLVM_SRC
+clone_with_retries https://github.com/grubwithu/llvm-project.git $LLVM_SRC
+# pushd /root/
+# tar -zxf pfuzzer.tgz
+# cp -rf pfuzzer/* $LLVM_SRC/compiler-rt/lib/fuzzer/
+# popd
 
-git -C $LLVM_SRC checkout $OUR_LLVM_REVISION
+# git -C $LLVM_SRC checkout $OUR_LLVM_REVISION
 echo "Using LLVM revision: $OUR_LLVM_REVISION"
 
 # For fuzz introspector.
