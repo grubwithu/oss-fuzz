@@ -1,0 +1,7 @@
+.vscode/*.json
+.build
+libFuzzer.a
+
+build/
+
+.cache/

@@ -97,6 +97,20 @@ clone_with_retries https://github.com/llvm/llvm-project.git $LLVM_SRC
 git -C $LLVM_SRC checkout $OUR_LLVM_REVISION
 echo "Using LLVM revision: $OUR_LLVM_REVISION"
 
+# Replace upstream libFuzzer sources with pfuzzer (Orchestra's multi-engine
+# fork) before the LLVM build, so the compiler's -fsanitize=fuzzer runtime IS
+# pfuzzer and every fuzzer binary links the toolchain's own pfuzzer archive
+# with a matching C++ ABI. Keep the LLVM-style CMakeLists.txt (pfuzzer's
+# standalone one lacks the compiler-rt runtime/install machinery) and
+# register the extra harness source instead.
+PFZZER_SRC=/root/pfuzzer
+FUZZER_SRC=$LLVM_SRC/compiler-rt/lib/fuzzer
+cp $FUZZER_SRC/CMakeLists.txt /tmp/llvm-fuzzer-cmakelists.txt
+cp -rf $PFZZER_SRC/. $FUZZER_SRC/
+cp /tmp/llvm-fuzzer-cmakelists.txt $FUZZER_SRC/CMakeLists.txt
+sed -i 's|  FuzzerUtilWindows.cpp)|  FuzzerUtilWindows.cpp\n  FuzzerOrchestra.cpp\n  FuzzerHFC.cpp)|' $FUZZER_SRC/CMakeLists.txt
+sed -i 's|^set(LIBFUZZER_CFLAGS ${COMPILER_RT_COMMON_CFLAGS})|set(LIBFUZZER_CFLAGS ${COMPILER_RT_COMMON_CFLAGS})\nlist(APPEND LIBFUZZER_CFLAGS -DCPPHTTPLIB_NO_EXCEPTIONS -DJSON_NOEXCEPTION)\ninclude_directories(AFTER ${CMAKE_CURRENT_SOURCE_DIR}/third-party/cpp-httplib ${CMAKE_CURRENT_SOURCE_DIR}/third-party/json/include)|' $FUZZER_SRC/CMakeLists.txt
+
 # Prepare fuzz introspector.
 echo "Installing fuzz introspector"
 FUZZ_INTROSPECTOR_CHECKOUT=341ebbd72bc9116733bcfcfab5adfd7f9b633e07
@@ -166,6 +180,11 @@ rm -rf $WORK/llvm-stage1 $WORK/llvm-stage2
 
 # libFuzzer sources.
 cp -r $LLVM_SRC/compiler-rt/lib/fuzzer $SRC/libfuzzer
+# Orchestra: strip non-runtime files (third-party harness headers, afl,
+# build scripts) from the reference copy, so that project build.sh scripts
+# sweeping "$SRC -name '*_fuzzer.cc'" (e.g. zlib) do not pick them up.
+rm -rf $SRC/libfuzzer/third-party $SRC/libfuzzer/afl \
+  $SRC/libfuzzer/build.sh $SRC/libfuzzer/build-hcfuzzer.sh
 
 # Use the clang we just built from now on.
 export CC=clang

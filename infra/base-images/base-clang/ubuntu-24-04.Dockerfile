@@ -34,6 +34,9 @@ RUN apt-get update && apt-get install -y wget sudo && \
     rm -rf /usr/local/doc/cmake /usr/local/bin/cmake-gui
 
 COPY checkout_build_install_llvm_ubuntu_24_04.sh /root/
+# Orchestra: pfuzzer sources replace upstream libFuzzer inside the LLVM build
+# (see checkout_build_install_llvm_ubuntu_24_04.sh).
+COPY pfuzzer/ /root/pfuzzer/
 RUN chmod +x /root/checkout_build_install_llvm_ubuntu_24_04.sh
 # Keep all steps in the same script to decrease the number of intermediate
 # layes in docker file.
