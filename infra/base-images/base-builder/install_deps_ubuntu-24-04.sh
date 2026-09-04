@@ -24,6 +24,10 @@ case $(uname -m) in
         ;;
 esac
 
+# Orchestra: the local HTTP proxy intermittently returns 502 on archive
+# fetches; retry before failing so one flaky response does not kill the build.
+echo 'APT::Acquire::Retries "8";' > /etc/apt/apt.conf.d/99-oss-fuzz-apt-retries
+
 # Orchestra: fail hard instead of silently skipping the package install.
 # The previous `apt-get update && apt-get install ...` form skipped the whole
 # install when update failed (e.g. proxy 502) yet the layer still exited 0,
@@ -49,7 +53,7 @@ case $(uname -m) in
 esac
 
 # Ubuntu 24.04 does not have lcab. Install an older .deb from Ubuntu repos.
-curl -LO https://mirrors.edge.kernel.org/ubuntu/pool/universe/l/lcab/lcab_1.0b12-7_amd64.deb || exit 1
+curl --retry 8 -LO https://mirrors.edge.kernel.org/ubuntu/pool/universe/l/lcab/lcab_1.0b12-7_amd64.deb || exit 1
 apt-get install -y ./lcab_1.0b12-7_amd64.deb || exit 1
 rm lcab_1.0b12-7_amd64.deb
 
